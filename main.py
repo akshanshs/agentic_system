@@ -1,3 +1,5 @@
+import json
+
 import requests
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -37,9 +39,39 @@ def extract_core_website_content(html: str) -> str:
 def summarize_content(content: str) -> str:
     response = client.responses.create(
         model="gpt-4o-mini",
-
+        input=f"""
+        You are an expert summarizer. Your task is to summarize the provided content into a concise and clear summary.
+        
+        Here is the content to summarize:
+        <content>
+        {content}
+        </content>
+        
+        Please provide a brief summary of the main points in the content. Prefer bullet points and avoid unnecessary explanations.
+    """
     )
-def generate_x_post(usr_input: str) -> str:
+
+    return response.output_text
+
+
+def generate_x_post(summary: str) -> str:
+    with open("post-examples.json", "r") as f:
+        examples = json.load(f)
+
+    example_str = ""
+    for i, example in enumerate(examples, 1):
+        example_str += f"""
+        <example-{i}>
+            <topic>
+            {example['topic']}
+            </topic>
+            
+            <generated-post>
+            {example['post']}
+            </generated-post>
+        </example-{i}>
+        """
+
     prompt = f"""
         You are an expert social media manager, and you excel at crafting viral and highly engaging posts for X (formerly Twitter).
 
@@ -49,25 +81,57 @@ def generate_x_post(usr_input: str) -> str:
         Keep the post short and focused, structure it in a clean, readable way, using line breaks and empty lines to enhance readability.
 
         Here's the topic provided by the user for which you need to generate a post:
-        <usr_input>
-        {usr_input}
-        </usr_input>
+        <summary>
+        {summary}
+        </summary>
+        
+        Here are some examples of topics and generated posts:
+        <examples>
+        {example_str}
+        </examples>
+        
+        Please use the tone, language, structure , and style of the examples provided above to generate a post that is engaging and relevant to the topic provided by the user.
+        Don't use the content from the examples!
     """
-    response = client.chat.completions.create(
+    response = client.responses.create(
         model="gpt-4o-mini",
-        messages=[
-            {"role": "user", "content": usr_input}
-        ],
-        max_tokens=300
+        input=prompt
     )
 
-    return response.choices[0].message.content.strip()
+    return response.output_text
+
 
 def main():
-    usr_input = input("What should the post be about? ")
-    x_post = generate_x_post(usr_input)
-    print("The generated post is")
+    website_url = input("Website URL: ")
+    print("Fetching website HTML . . . .")
+    try:
+        html_content = get_website_html(website_url)
+    except Exception as e:
+        print(f"An error occurred while fetching the website: {e}")
+        return
+
+    if not html_content:
+        print("Failed to fetch the website content. Exiting.")
+        return
+
+    print("---------")
+    print("Extracting core content from the website...")
+    core_content = extract_core_website_content(html_content)
+    print("Extracted core content:")
+    print(core_content)
+
+    print("---------")
+    print("Summarizing the core content...")
+    summary = summarize_content(core_content)
+    print("Generated summary:")
+    print(summary)
+
+    print("---------")
+    print("Generating X post based on the summary...")
+    x_post = generate_x_post(summary)
+    print("Generated X post:")
     print(x_post)
+
 
 if __name__ == '__main__':
     main()

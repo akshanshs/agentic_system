@@ -1,0 +1,10 @@
+[
+  {
+    "topic": "What is a recommender system?",
+    "post": "A recommender system is a type of machine learning (ML) or AI system designed to filter and predict the most relevant items for a user from a large pool of options"
+  },
+  {
+    "topic": "What is AI agent",
+    "post": "An AI agent is a software program (or sometimes a robot) that perceives its environment, makes decisions, and takes actions to achieve a goal—autonomously or semi-autonomously"
+  }
+]

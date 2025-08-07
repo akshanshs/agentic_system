@@ -1,3 +1,4 @@
+import json
 from openai import OpenAI
 from dotenv import load_dotenv
 
@@ -12,6 +13,23 @@ def get_temperature(city: str) -> float:
     :return:
     """
     return 20.0
+
+
+def execute_tool_call(tool_call) -> str | float:
+    """
+    Executes a tool call and returns the output.
+    """
+    fn_name = tool_call.name
+    fn_args = json.loads(tool_call.arguments)
+
+    if fn_name in available_functions:
+        function_to_call = available_functions[fn_name]
+        try:
+            return function_to_call(**fn_args)
+        except Exception as e:
+            return f"Error calling {fn_name}: {e}"
+
+    return f"Unknown tool: {fn_name}"
 
 
 available_functions = {
@@ -40,54 +58,43 @@ tools = [
 
 
 def main():
-    print("Hello from agent")
-    user_input = input("Your question: ")
-    prompt = f"""
-    you are a helpful assistant. Answer the user;s question in a friendly way.
-    you can also use tools if oyu feel like they help you provide a better answer:
-        - get_temperature(city: str) -> float: Get the current temperature for a given city.
-        
-    If you want to use one of these tools, you should output the tool name and its arguments in the following format:
-        tool_name: arg1, arg2, ....
-    for example:
-        get_temperature: Berlin
-    with that in mind, answer the user's question:
-    <user-question>
-    {user_input}
-    </user-question>
-    
-    If you request a tool, please output ONLY the tool call (as described above) and nothing else.
-    """
+    messages = [
+        {"role": "developer", "content": "You are a helpful assistant. Answer the user's question in a friendly way."}
+    ]
 
-    response = client.responses.create(
-        model='gpt-4o-mini',
-        input=prompt
-    )
-    reply = response.output_text
+    while True:
+        user_input = input("Your question (type 'exit' to end the conversation): ")
+        if user_input == "exit":
+            break
 
-    if reply.startswith("get_temperature"):
-        arg = reply.split(":", 1)[1].strip()
-        temperature = get_temperature(arg)
-        prompt = f"""
-        You are a helpful assistant. Answer the user's question in a friendly way.
-        Here's the user's question:
-        <user-question>
-        {user_input}
-        </user-question>
-        
-        
-        Here's the result of using that tool:
-        The current temperature in {arg} is {temperature}°C.
-        """
+        messages.append({"role": "user", "content": user_input})
+        response = client.responses.create(
+            model='gpt-4o',
+            input=messages,
+            tools=tools
+        )
+
+        output = response.output[0]
+        messages.append(output)
+
+        if output.type != "function_call":
+            print(response.output_text)
+            continue
+
+        tool_output = execute_tool_call(output)
+        messages.append({
+            "type": "function_call_output",
+            "call_id": output.call_id,
+            "output": str(tool_output)
+        })
 
         response = client.responses.create(
-           model="gpt-4o-mini",
-           input=prompt
+            model='gpt-4o',
+            input=messages,
         )
-        reply = response.output_text
-        print(reply)
-    else:
-        print(reply)
+        print(response.output_text)
+
+    print(messages)
 
 
 if __name__ == '__main__':

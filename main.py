@@ -69,7 +69,7 @@ def main():
 
         messages.append({"role": "user", "content": user_input})
         response = client.responses.create(
-            model='gpt-4o',
+            model='gpt-4o-mini',
             input=messages,
             tools=tools
         )
@@ -89,12 +89,10 @@ def main():
         })
 
         response = client.responses.create(
-            model='gpt-4o',
+            model='gpt-4o-mini',
             input=messages,
         )
         print(response.output_text)
-
-    print(messages)
 
 
 if __name__ == '__main__':

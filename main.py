@@ -19,21 +19,21 @@ def generate_x_post(usr_input: str) -> str:
         {usr_input}
         </usr_input>
     """
-    response = client.chat.completions.create(
+    response = client.responses.create(
         model="gpt-4o-mini",
-        messages=[
-            {"role": "user", "content": usr_input}
-        ],
-        max_tokens=300
+        input=[{'role': 'user', 'content': usr_input}],
+        max_output_tokens=300
     )
 
-    return response.choices[0].message.content.strip()
+    return response.output_text.strip()
+
 
 def main():
     usr_input = input("What should the post be about? ")
     x_post = generate_x_post(usr_input)
     print("The generated post is")
     print(x_post)
+
 
 if __name__ == '__main__':
     main()

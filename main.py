@@ -240,7 +240,7 @@ def main():
             response = client.responses.create(
                 model='gpt-4o',
                 input=messages,
-                tools=tools,
+                tools=tools
             )
 
             output = response.output

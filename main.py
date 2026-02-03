@@ -19,15 +19,10 @@ create_db_and_tables()
 
 def verify_customer(name: str, pin: str) -> int:
     """
-    Verifies a customer's identity using their name and PIN.
-    Returns the customer ID if verified, or -1 if not found.
-    """
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-    first_name, last_name = name.lower().split()
-    cursor.execute(
-        "SELECT id FROM customers WHERE LOWER(first_name) = ? AND LOWER(last_name) = ? AND pin = ?",
-        (first_name, last_name, pin),
+    response = client.responses.create(
+        model="gpt-4o-mini",
+        input=[{'role': 'user', 'content': usr_input}],
+        max_output_tokens=300
     )
     result = cursor.fetchone()
     conn.close()
@@ -210,6 +205,8 @@ def execute_tool_call(tool_call) -> str:
 
     return f"Unknown tool: {fn_name}"
 
+    return response.output_text.strip()
+
 
 def main():
     messages = [
@@ -262,7 +259,8 @@ def main():
                 break
 
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     main()
 
 # See PyCharm help at https://www.jetbrains.com/help/pycharm/
